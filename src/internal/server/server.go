@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"gopigeon/internal/controllers"
+	"gopigeon/internal/models"
 	"log"
 	"net/http"
 
@@ -22,10 +23,16 @@ func StartServer() {
 
 func setupRoutes() {
 	fmt.Println("Setting up routes.")
-	http.HandleFunc("/", rootPage)
-	http.HandleFunc("/chat", chatHandler)
 
-	http.HandleFunc("/user/{username}", userHandler)
+	router := mux.NewRouter()
+
+	router.HandleFunc("/", rootPage)
+	router.HandleFunc("/chat", chatHandler)
+
+	router.HandleFunc("/users/", usersHandler).Methods(http.MethodGet, http.MethodPost)
+	router.HandleFunc("/user/{username}", userHandler)
+
+	http.Handle("/", router)
 }
 
 func rootPage(w http.ResponseWriter, r *http.Request) {
@@ -64,12 +71,31 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	user, err := controllers.GetUser(username)
-	if err != nil {
+	db, _ := controllers.GetDB()
+	user := controllers.GetUser(username, db)
+	log.Println(user)
+	if user == nil {
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
 	fmt.Fprintf(w, "User: %s\n", user.Username)
+}
+
+func usersHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println(r.URL)
+
+	db, _ := controllers.GetDB()
+
+	if r.Method == http.MethodGet {
+		users := controllers.GetUsers(db)
+		fmt.Fprintf(w, "Users: %v\n", users)
+	}
+	if r.Method == http.MethodPost {
+		username := r.FormValue("username")
+		password := r.FormValue("password")
+		log.Println(username)
+		controllers.CreateUser(&models.User{Username: username, Password: password}, db)
+	}
 }
 
 func reader(conn *websocket.Conn) {

@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"gopidgeon/internal/server"
+	"gopigeon/internal/server"
 )
 
 func main() {
