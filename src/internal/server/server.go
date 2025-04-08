@@ -95,6 +95,8 @@ func usersHandler(w http.ResponseWriter, r *http.Request) {
 		password := r.FormValue("password")
 		log.Println(username)
 		controllers.CreateUser(&models.User{Username: username, Password: password}, db)
+		w.WriteHeader(http.StatusCreated)
+		fmt.Fprintf(w, "User %s created\n", username)
 	}
 }
 
